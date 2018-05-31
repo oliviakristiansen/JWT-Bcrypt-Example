@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const models = require("../models")
 
 module.exports = {
     signUser: function (user) {
@@ -17,12 +18,20 @@ module.exports = {
         try {
             console.log('AUTH GET')
             // console.log(req)
-            // let token = req.get("Authorization").split(" ")[1];
-            // console.log(token);
-            // const decoded = jwt.verify(token, "secret");
-            // console.log(decoded);
-            // req.userData = decoded;
-            next();
+            let token = req.cookies.jwt;
+            console.log(token);
+            const decoded = jwt.verify(token, "secret");
+            console.log(decoded);
+            req.userData = decoded;
+            models.users.findOne({
+                where: {
+                    UserId: decoded.UserId
+                }
+            }).then(user => {
+                console.log(user.UserId)
+                req.user = user;
+                next();
+            })
         } catch (err) {
             return res.status(401).json({
                 message: "Auth Failed"

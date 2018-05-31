@@ -29,8 +29,6 @@ module.exports = (sequelize, DataTypes) => {
   };
   users.prototype.comparePassword = function (password, cb) {
     const user = this;
-    console.log(password)
-    console.log(user.Password)
     if (password === user.Password) {
       console.log("Match");
       return cb(null, true);

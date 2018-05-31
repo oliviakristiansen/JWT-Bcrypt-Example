@@ -49,7 +49,6 @@ router.post('/login', function (req, res, next) {
         message: "Login Failed"
       });
     }
-    console.log(user.comparePassword);
     user.comparePassword(req.body.password, (err, isMatch) => {
       console.log(req.body.password);
       if (err) {
@@ -60,7 +59,8 @@ router.post('/login', function (req, res, next) {
         const userId = user.UserId
         console.log(userId)
         const token = auth.signUser(user);
-        // req.setHeader('Authorization', token);
+        res.cookie('jwt', token);
+        // console.log(res)
         // res.json({
         //   message: "Logged in",
         //   token: token
@@ -74,28 +74,24 @@ router.post('/login', function (req, res, next) {
 });
 
 router.get('/profile/:id', auth.verifyUser, function (req, res, next) {
-  // console.log(res)
-  models.users.findOne({
-    where: {
-      UserId: req.params.id
-    }
-  }).then(user => {
-    console.log("LOOK HERE")
-    // console.log(user.UserId);
-    // console.log(req.params.id);
-    // console.log(user);
-    if (user.UserId == req.params.id) {
-      res.render('profile', {
-        FirstName: user.FirstName,
-        LastName: user.LastName,
-        Email: user.Email,
-        UserId: user.UserId,
-        Username: user.Username
-      });
-    } else {
-      res.send('This is not your profile')
-    }
-  })
+  // console.log(req.params.id)
+  // console.log(req.userData)
+  // console.log(typeof (req.user.UserId))
+  // console.log(typeof (req.params.id))
+  if (req.params.id !== String(req.user.UserId)) {
+    res.send('This is not your profile')
+  } else {
+    res.render('profile', {
+      FirstName: req.user.FirstName,
+      LastName: req.user.LastName,
+      Email: req.user.Email,
+      UserId: req.user.UserId,
+      Username: req.user.Username
+    });
+  }
+
+
+
 });
 
 module.exports = router;
