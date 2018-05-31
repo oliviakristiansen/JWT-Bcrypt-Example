@@ -40,9 +40,10 @@ router.get('/login', function (req, res, next) {
 router.post('/login', function (req, res, next) {
   models.users.findOne({
     where: {
-      username: req.body.username
+      Username: req.body.username
     }
   }).then(user => {
+    console.log('then')
     if (!user) {
       return res.status(401).json({
         message: "Login Failed"
@@ -56,12 +57,15 @@ router.post('/login', function (req, res, next) {
         return next(err);
       }
       if (isMatch) {
+        const userId = user.UserId
+        console.log(userId)
         const token = auth.signUser(user);
-        res.json({
-          message: "Logged in",
-          token: token
-        });
-        res.redirect('profile/' + user.UserId)
+        // req.setHeader('Authorization', token);
+        // res.json({
+        //   message: "Logged in",
+        //   token: token
+        // });
+        res.redirect('profile/' + userId)
       }
 
     });
@@ -69,18 +73,29 @@ router.post('/login', function (req, res, next) {
 
 });
 
-router.get('/profile/:id', function (req, res, next) {
-  if (req.user.UserId === req.params.id) {
-    res.render('profile', {
-      FirstName: req.user.firstName,
-      LastName: req.user.lastName,
-      Email: req.user.email,
-      UserId: req.user.UserId,
-      Username: req.user.username
-    });
-  } else {
-    res.send('This is not your profile')
-  }
+router.get('/profile/:id', auth.verifyUser, function (req, res, next) {
+  // console.log(res)
+  models.users.findOne({
+    where: {
+      UserId: req.params.id
+    }
+  }).then(user => {
+    console.log("LOOK HERE")
+    // console.log(user.UserId);
+    // console.log(req.params.id);
+    // console.log(user);
+    if (user.UserId == req.params.id) {
+      res.render('profile', {
+        FirstName: user.FirstName,
+        LastName: user.LastName,
+        Email: user.Email,
+        UserId: user.UserId,
+        Username: user.Username
+      });
+    } else {
+      res.send('This is not your profile')
+    }
+  })
 });
 
 module.exports = router;
