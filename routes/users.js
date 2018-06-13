@@ -3,6 +3,9 @@ var router = express.Router();
 const sqlite = require('sqlite3').verbose();
 var models = require('../models');
 const auth = require("../config/auth");
+const passport = require("passport");
+// const GithubStrategy = require("passport-github").Strategy;
+// const github = require('../passport/github');
 
 
 /* GET users listing. */
@@ -15,21 +18,35 @@ router.get("/signup", function (req, res, next) {
 });
 
 router.post('/signup', function (req, res, next) {
-  models.users.findOrCreate({
+  const hashedPassword = auth.hashPassword(req.body.password);
+  models.users.findOne({
     where: {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      username: req.body.username,
-      password: req.body.password
+      Username: req.body.username
     }
-  }).spread(function (result, created) {
-    if (created) {
-      res.redirect('profile/' + result.UserId)
-    } else {
+  }).then(user => {
+    console.log(user)
+    if (user) {
       res.send('this user already exists')
+    } else {
+      models.users.create({
+        FirstName: req.body.firstName,
+        LastName: req.body.lastName,
+        Email: req.body.email,
+        Username: req.body.username,
+        Password: hashedPassword
+      }).then(createdUser => {
+        const isMatch = createdUser.comparePassword(req.body.password);
+
+        if (isMatch) {
+          const userId = createdUser.UserId
+          console.log(userId)
+          const token = auth.signUser(createdUser);
+          res.cookie('jwt', token);
+          res.redirect('profile/' + userId)
+        } else console.error('not a match');
+      })
     }
-  });
+  })
 
 });
 
@@ -38,46 +55,47 @@ router.get('/login', function (req, res, next) {
 });
 
 router.post('/login', function (req, res, next) {
+  const hashedPassword = auth.hashPassword(req.body.password);
   models.users.findOne({
     where: {
       Username: req.body.username
     }
   }).then(user => {
-    console.log('then')
+    console.log('login found a user')
     if (!user) {
       return res.status(401).json({
         message: "Login Failed"
       });
     }
-    user.comparePassword(req.body.password, (err, isMatch) => {
+    console.log(user.comparePassword(req.body.password))
+    if (user.comparePassword(req.body.password)) {
+      const userId = user.UserId
+      console.log(userId)
+      const token = auth.signUser(user);
+      res.cookie('jwt', token);
+      res.redirect('profile/' + userId)
+    } else {
       console.log(req.body.password);
-      if (err) {
-        console.log(err);
-        return next(err);
-      }
-      if (isMatch) {
-        const userId = user.UserId
-        console.log(userId)
-        const token = auth.signUser(user);
-        res.cookie('jwt', token);
-        // console.log(res)
-        // res.json({
-        //   message: "Logged in",
-        //   token: token
-        // });
-        res.redirect('profile/' + userId)
-      }
+      res.redirect('login')
+    }
 
-    });
   });
-
 });
 
+
+// router.get("/login/github", passport.authenticate("github"));
+
+// router.get(
+//   "/login/github/callback",
+//   passport.authenticate("github", {
+//     failureRedirect: "/pirates"
+//   }),
+//   function (req, res) {
+//     res.redirect("/users");
+//   }
+// );
+
 router.get('/profile/:id', auth.verifyUser, function (req, res, next) {
-  // console.log(req.params.id)
-  // console.log(req.userData)
-  // console.log(typeof (req.user.UserId))
-  // console.log(typeof (req.params.id))
   if (req.params.id !== String(req.user.UserId)) {
     res.send('This is not your profile')
   } else {

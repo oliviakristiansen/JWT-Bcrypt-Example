@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
-const models = require("../models")
+const bcrypt = require("bcryptjs");
+const models = require("../models/index");
 
 module.exports = {
     signUser: function (user) {
@@ -19,10 +20,12 @@ module.exports = {
             console.log('AUTH GET')
             // console.log(req)
             let token = req.cookies.jwt;
+            console.log(req.cookies)
             console.log(token);
             const decoded = jwt.verify(token, "secret");
-            console.log(decoded);
+            console.log("decoded", decoded);
             req.userData = decoded;
+            console.log(models)
             models.users.findOne({
                 where: {
                     UserId: decoded.UserId
@@ -33,9 +36,17 @@ module.exports = {
                 next();
             })
         } catch (err) {
+            console.log(err)
             return res.status(401).json({
                 message: "Auth Failed"
             });
         }
+    },
+
+    hashPassword: function (plainTextPassword) {
+        let salt = bcrypt.genSaltSync(10);
+        let hash = bcrypt.hashSync(plainTextPassword, salt);
+        return hash;
+
     }
 };
