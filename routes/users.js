@@ -3,9 +3,6 @@ var router = express.Router();
 const sqlite = require('sqlite3').verbose();
 var models = require('../models');
 const auth = require("../config/auth");
-const passport = require("passport");
-// const GithubStrategy = require("passport-github").Strategy;
-// const github = require('../passport/github');
 
 
 /* GET users listing. */
@@ -24,7 +21,7 @@ router.post('/signup', function (req, res, next) {
       Username: req.body.username
     }
   }).then(user => {
-    console.log(user)
+    // console.log(user)
     if (user) {
       res.send('this user already exists')
     } else {
@@ -70,7 +67,7 @@ router.post('/login', function (req, res, next) {
     console.log(user.comparePassword(req.body.password))
     if (user.comparePassword(req.body.password)) {
       const userId = user.UserId
-      console.log(userId)
+      // console.log(userId)
       const token = auth.signUser(user);
       res.cookie('jwt', token);
       res.redirect('profile/' + userId)
@@ -81,19 +78,6 @@ router.post('/login', function (req, res, next) {
 
   });
 });
-
-
-// router.get("/login/github", passport.authenticate("github"));
-
-// router.get(
-//   "/login/github/callback",
-//   passport.authenticate("github", {
-//     failureRedirect: "/pirates"
-//   }),
-//   function (req, res) {
-//     res.redirect("/users");
-//   }
-// );
 
 router.get('/profile/:id', auth.verifyUser, function (req, res, next) {
   if (req.params.id !== String(req.user.UserId)) {
@@ -107,9 +91,6 @@ router.get('/profile/:id', auth.verifyUser, function (req, res, next) {
       Username: req.user.Username
     });
   }
-
-
-
 });
 
 module.exports = router;
